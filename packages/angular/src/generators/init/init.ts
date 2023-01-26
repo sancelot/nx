@@ -1,6 +1,6 @@
-import { cypressInitGenerator } from '@nrwl/cypress';
 import {
   addDependenciesToPackageJson,
+  ensurePackage,
   formatFiles,
   GeneratorCallback,
   logger,
@@ -8,8 +8,9 @@ import {
   Tree,
   updateNxJson,
 } from '@nrwl/devkit';
-import { jestInitGenerator } from '@nrwl/jest';
+import { jestInitGenerator } from '@nrwl/jest/generators';
 import { Linter } from '@nrwl/linter';
+import { initGenerator as jsInitGenerator } from '@nrwl/js';
 import { runTasksInSerial } from '@nrwl/workspace/src/utilities/run-tasks-in-serial';
 import { join } from 'path';
 import { E2eTestRunner, UnitTestRunner } from '../../utils/test-runners';
@@ -19,6 +20,7 @@ import {
   jasmineCoreVersion,
   jasmineSpecReporterVersion,
   jestPresetAngularVersion,
+  nxVersion,
   protractorVersion,
   rxjsVersion,
   tsLibVersion,
@@ -47,12 +49,17 @@ export async function angularInitGenerator(
 
   const options = normalizeOptions(rawOptions);
   setDefaults(tree, options);
+  await jsInitGenerator(tree, {
+    js: false,
+    skipFormat: true,
+  });
 
   const depsTask = !options.skipPackageJson
     ? updateDependencies(tree)
     : () => {};
   const unitTestTask = await addUnitTestRunner(tree, options);
-  const e2eTask = addE2ETestRunner(tree, options);
+  const e2eTask = await addE2ETestRunner(tree, options);
+
   addGitIgnoreEntry(tree, '.angular');
 
   if (!options.skipFormat) {
@@ -151,7 +158,10 @@ async function addUnitTestRunner(
   }
 }
 
-function addE2ETestRunner(host: Tree, options: Schema): GeneratorCallback {
+async function addE2ETestRunner(
+  host: Tree,
+  options: Schema
+): Promise<GeneratorCallback> {
   switch (options.e2eTestRunner) {
     case E2eTestRunner.Protractor:
       return !options.skipPackageJson
@@ -169,6 +179,10 @@ function addE2ETestRunner(host: Tree, options: Schema): GeneratorCallback {
           )
         : () => {};
     case E2eTestRunner.Cypress:
+      await ensurePackage(host, '@nrwl/cypress', nxVersion);
+      const { cypressInitGenerator } = await import(
+        '@nrwl/cypress/src/generators/init/init'
+      );
       return cypressInitGenerator(host, {
         skipPackageJson: options.skipPackageJson,
       });

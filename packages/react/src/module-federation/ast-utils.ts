@@ -1,11 +1,8 @@
 import * as ts from 'typescript';
 import { ChangeType, StringChange } from '@nrwl/devkit';
 import { findNodes } from 'nx/src/utils/typescript';
-import {
-  addImport,
-  findClosestOpening,
-  findElements,
-} from '../utils/ast-utils';
+import { findClosestOpening, findElements } from '../utils/ast-utils';
+import { addImport } from '../utils/add-import';
 
 export function addRemoteToConfig(
   source: ts.SourceFile,

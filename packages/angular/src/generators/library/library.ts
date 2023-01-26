@@ -7,7 +7,7 @@ import {
   Tree,
 } from '@nrwl/devkit';
 import { wrapAngularDevkitSchematic } from '@nrwl/devkit/ngcli-adapter';
-import { jestProjectGenerator } from '@nrwl/jest';
+import { jestProjectGenerator } from '@nrwl/jest/generators';
 import { Linter } from '@nrwl/linter';
 import { lt } from 'semver';
 import init from '../../generators/init/init';
@@ -87,7 +87,6 @@ export async function libraryGenerator(tree: Tree, schema: Schema) {
     );
   }
   await updateProject(tree, libraryOptions);
-  updateTsConfig(tree, libraryOptions);
   await addUnitTestRunner(tree, libraryOptions);
   updateNpmScopeIfBuildableOrPublishable(tree, libraryOptions);
 
@@ -121,6 +120,7 @@ export async function libraryGenerator(tree: Tree, schema: Schema) {
     );
     addBuildableLibrariesPostCssDependencies(tree);
   }
+  updateTsConfig(tree, libraryOptions);
 
   if (!libraryOptions.skipFormat) {
     await formatFiles(tree);

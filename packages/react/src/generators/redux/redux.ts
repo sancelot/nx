@@ -1,10 +1,7 @@
 import * as path from 'path';
 import * as ts from 'typescript';
-import {
-  addImport,
-  addReduxStoreToMain,
-  updateReduxStore,
-} from '../../utils/ast-utils';
+import { addReduxStoreToMain, updateReduxStore } from '../../utils/ast-utils';
+import { addImport } from '../../utils/add-import';
 import { reactReduxVersion, reduxjsToolkitVersion } from '../../utils/versions';
 import { NormalizedSchema, Schema } from './schema';
 import {
@@ -20,7 +17,7 @@ import {
   toJS,
   Tree,
 } from '@nrwl/devkit';
-import { getRootTsConfigPathInTree } from '@nrwl/workspace/src/utilities/typescript';
+import { getRootTsConfigPathInTree } from '@nrwl/js';
 
 export async function reduxGenerator(host: Tree, schema: Schema) {
   const options = normalizeOptions(host, schema);

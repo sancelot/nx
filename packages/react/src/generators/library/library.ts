@@ -38,8 +38,6 @@ export async function libraryGenerator(host: Tree, schema: Schema) {
     options.style = 'none';
   }
 
-  extractTsConfigBase(host);
-
   const initTask = await initGenerator(host, {
     ...options,
     e2eTestRunner: 'none',
@@ -48,6 +46,8 @@ export async function libraryGenerator(host: Tree, schema: Schema) {
     skipHelperLibs: options.bundler === 'vite',
   });
   tasks.push(initTask);
+
+  extractTsConfigBase(host);
 
   addProjectConfiguration(host, options.name, {
     root: options.projectRoot,

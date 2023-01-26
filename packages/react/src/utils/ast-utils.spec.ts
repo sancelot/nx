@@ -104,34 +104,6 @@ describe('addRoute', () => {
     tree = createTreeWithEmptyWorkspace({ layout: 'apps-libs' });
   });
 
-  it('should add links and routes if they are not present', async () => {
-    const sourceCode = `
-import React from 'react';
-const App = () => (
-  <>
-    <h1>Hello</h1>
-  </>
-);
-export default App; 
-      `;
-    tree.write('/app.tsx', sourceCode);
-    const source = ts.createSourceFile(
-      '/app.tsx',
-      sourceCode,
-      ts.ScriptTarget.Latest,
-      true
-    );
-
-    const result = applyChangesToString(
-      sourceCode,
-      utils.addInitialRoutes('/app.tsx', source)
-    );
-
-    expect(result).toMatch(/role="navigation"/);
-    expect(result).toMatch(/<Link\s+to="\/page-2"/);
-    expect(result).toMatch(/<Route\s+path="\/page-2"/);
-  });
-
   it('should update existing routes', async () => {
     const sourceCode = `
 import React from 'react';

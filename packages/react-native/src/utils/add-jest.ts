@@ -1,5 +1,5 @@
-import { Tree } from '@nrwl/devkit';
-import { jestProjectGenerator } from '@nrwl/jest';
+import { ensurePackage, Tree } from '@nrwl/devkit';
+import { nxVersion } from './versions';
 
 export async function addJest(
   host: Tree,
@@ -13,6 +13,8 @@ export async function addJest(
     return () => {};
   }
 
+  await ensurePackage(host, '@nrwl/jest', nxVersion);
+  const { jestProjectGenerator } = require('@nrwl/jest/generators');
   const jestTask = await jestProjectGenerator(host, {
     js,
     project: projectName,

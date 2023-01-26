@@ -22,7 +22,7 @@ import {
 } from '@nrwl/devkit';
 import { Linter, lintProjectGenerator } from '@nrwl/linter';
 import { insertImport } from '@nrwl/workspace/src/utilities/ast-utils';
-import { getRootTsConfigPathInTree } from '@nrwl/workspace/src/utilities/typescript';
+import { getRootTsConfigPathInTree } from '@nrwl/js';
 import { tsquery } from '@phenomnomnominal/tsquery';
 import { basename, relative } from 'path';
 import type {

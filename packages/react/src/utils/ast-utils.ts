@@ -1,36 +1,7 @@
 import * as ts from 'typescript';
 import { findNodes } from 'nx/src/utils/typescript';
-import {
-  ChangeType,
-  logger,
-  StringChange,
-  StringInsertion,
-} from '@nrwl/devkit';
-
-export function addImport(
-  source: ts.SourceFile,
-  statement: string
-): StringChange[] {
-  const allImports = findNodes(source, ts.SyntaxKind.ImportDeclaration);
-  if (allImports.length > 0) {
-    const lastImport = allImports[allImports.length - 1];
-    return [
-      {
-        type: ChangeType.Insert,
-        index: lastImport.end + 1,
-        text: `\n${statement}\n`,
-      },
-    ];
-  } else {
-    return [
-      {
-        type: ChangeType.Insert,
-        index: 0,
-        text: `\n${statement}\n`,
-      },
-    ];
-  }
-}
+import { ChangeType, logger, StringChange } from '@nrwl/devkit';
+import { addImport } from './add-import';
 
 export function findMainRenderStatement(
   source: ts.SourceFile
@@ -307,66 +278,6 @@ export function isTag(tagName: string, node: ts.Node) {
   }
 
   return false;
-}
-
-export function addInitialRoutes(
-  sourcePath: string,
-  source: ts.SourceFile
-): StringChange[] {
-  const jsxClosingElements = findNodes(source, [
-    ts.SyntaxKind.JsxClosingElement,
-    ts.SyntaxKind.JsxClosingFragment,
-  ]);
-  const outerMostJsxClosing = jsxClosingElements[jsxClosingElements.length - 1];
-
-  if (!outerMostJsxClosing) {
-    logger.warn(
-      `Could not find JSX elements in ${sourcePath}; Skipping insert routes`
-    );
-    return [];
-  }
-
-  const insertRoutes: StringInsertion = {
-    type: ChangeType.Insert,
-    index: outerMostJsxClosing.getStart(),
-    text: `
-    {/* START: routes */}
-    {/* These routes and navigation have been generated for you */}
-    {/* Feel free to move and update them to fit your needs */}
-    <br/>
-    <hr/>
-    <br/>
-    <div role="navigation">
-      <ul>
-        <li><Link to="/">Home</Link></li>
-        <li><Link to="/page-2">Page 2</Link></li>
-      </ul>
-    </div>
-    <Routes>
-      <Route
-        path="/"
-        element={
-          <div>This is the generated root route. <Link to="/page-2">Click here for page 2.</Link></div>
-        }
-      />
-      <Route
-        path="/page-2"
-        element={
-          <div><Link to="/">Click here to go back to root page.</Link></div>
-        }
-      />
-    </Routes>
-    {/* END: routes */}
-    `,
-  };
-
-  return [
-    ...addImport(
-      source,
-      `import { Route, Routes, Link } from 'react-router-dom';`
-    ),
-    insertRoutes,
-  ];
 }
 
 export function addRoute(

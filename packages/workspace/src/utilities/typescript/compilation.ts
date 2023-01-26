@@ -2,7 +2,7 @@ import { joinPathFragments, logger } from '@nrwl/devkit';
 import { removeSync } from 'fs-extra';
 import * as ts from 'typescript';
 import type { CustomTransformers, Diagnostic, Program } from 'typescript';
-import { readTsConfig } from '../typescript';
+import { readTsConfig } from '../ts-config';
 
 export interface TypeScriptCompilationOptions {
   outputPath: string;

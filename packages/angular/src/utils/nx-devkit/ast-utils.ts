@@ -1,4 +1,4 @@
-import * as ts from 'typescript';
+import type * as ts from 'typescript';
 import { findNodes } from 'nx/src/utils/typescript';
 import { getSourceNodes } from '@nrwl/workspace/src/utilities/typescript/get-source-nodes';
 import * as path from 'path';
@@ -11,16 +11,21 @@ import {
 } from '@nrwl/workspace/src/utilities/ast-utils';
 import { tsquery } from '@phenomnomnominal/tsquery';
 
+let tsModule: typeof import('typescript');
+
 type DecoratorName = 'Component' | 'Directive' | 'NgModule' | 'Pipe';
 
 function _angularImportsFromNode(
   node: ts.ImportDeclaration,
   _sourceFile: ts.SourceFile
 ): { [name: string]: string } {
+  if (!tsModule) {
+    tsModule = require('typescript');
+  }
   const ms = node.moduleSpecifier;
   let modulePath: string;
   switch (ms.kind) {
-    case ts.SyntaxKind.StringLiteral:
+    case tsModule.SyntaxKind.StringLiteral:
       modulePath = (ms as ts.StringLiteral).text;
       break;
     default:
@@ -37,7 +42,7 @@ function _angularImportsFromNode(
       return {};
     } else if (node.importClause.namedBindings) {
       const nb = node.importClause.namedBindings;
-      if (nb.kind == ts.SyntaxKind.NamespaceImport) {
+      if (nb.kind == tsModule.SyntaxKind.NamespaceImport) {
         // This is of the form `import * as name from 'path'`. Return `name.`.
         return {
           [`${(nb as ts.NamespaceImport).name.text}.`]: modulePath,
@@ -84,9 +89,12 @@ export function getDecoratorMetadata(
   identifier: string,
   module: string
 ): ts.Node[] {
+  if (!tsModule) {
+    tsModule = require('typescript');
+  }
   const angularImports: { [name: string]: string } = findNodes(
     source,
-    ts.SyntaxKind.ImportDeclaration
+    tsModule.SyntaxKind.ImportDeclaration
   )
     .map((node: ts.ImportDeclaration) => _angularImportsFromNode(node, source))
     .reduce(
@@ -106,13 +114,14 @@ export function getDecoratorMetadata(
   return getSourceNodes(source)
     .filter((node) => {
       return (
-        node.kind == ts.SyntaxKind.Decorator &&
-        (node as ts.Decorator).expression.kind == ts.SyntaxKind.CallExpression
+        node.kind == tsModule.SyntaxKind.Decorator &&
+        (node as ts.Decorator).expression.kind ==
+          tsModule.SyntaxKind.CallExpression
       );
     })
     .map((node) => (node as ts.Decorator).expression as ts.CallExpression)
     .filter((expr) => {
-      if (expr.expression.kind == ts.SyntaxKind.Identifier) {
+      if (expr.expression.kind == tsModule.SyntaxKind.Identifier) {
         const id = expr.expression as ts.Identifier;
 
         return (
@@ -120,12 +129,12 @@ export function getDecoratorMetadata(
           angularImports[id.getFullText(source)] === module
         );
       } else if (
-        expr.expression.kind == ts.SyntaxKind.PropertyAccessExpression
+        expr.expression.kind == tsModule.SyntaxKind.PropertyAccessExpression
       ) {
         // This covers foo.NgModule when importing * as foo.
         const paExpr = expr.expression as ts.PropertyAccessExpression;
         // If the left expression is not an identifier, just give up at that point.
-        if (paExpr.expression.kind !== ts.SyntaxKind.Identifier) {
+        if (paExpr.expression.kind !== tsModule.SyntaxKind.Identifier) {
           return false;
         }
 
@@ -140,7 +149,7 @@ export function getDecoratorMetadata(
     .filter(
       (expr) =>
         expr.arguments[0] &&
-        expr.arguments[0].kind == ts.SyntaxKind.ObjectLiteralExpression
+        expr.arguments[0].kind == tsModule.SyntaxKind.ObjectLiteralExpression
     )
     .map((expr) => expr.arguments[0] as ts.ObjectLiteralExpression);
 }
@@ -153,6 +162,9 @@ function _addSymbolToDecoratorMetadata(
   expression: string,
   decoratorName: DecoratorName
 ): ts.SourceFile {
+  if (!tsModule) {
+    tsModule = require('typescript');
+  }
   const nodes = getDecoratorMetadata(source, decoratorName, '@angular/core');
   let node: any = nodes[0]; // tslint:disable-line:no-any
 
@@ -164,15 +176,15 @@ function _addSymbolToDecoratorMetadata(
   const matchingProperties: ts.ObjectLiteralElement[] = (
     node as ts.ObjectLiteralExpression
   ).properties
-    .filter((prop) => prop.kind == ts.SyntaxKind.PropertyAssignment)
+    .filter((prop) => prop.kind == tsModule.SyntaxKind.PropertyAssignment)
     // Filter out every fields that's not "metadataField". Also handles string literals
     // (but not expressions).
     .filter((prop: ts.PropertyAssignment) => {
       const name = prop.name;
       switch (name.kind) {
-        case ts.SyntaxKind.Identifier:
+        case tsModule.SyntaxKind.Identifier:
           return (name as ts.Identifier).getText(source) == metadataField;
-        case ts.SyntaxKind.StringLiteral:
+        case tsModule.SyntaxKind.StringLiteral:
           return (name as ts.StringLiteral).text == metadataField;
       }
 
@@ -211,7 +223,9 @@ function _addSymbolToDecoratorMetadata(
   const assignment = matchingProperties[0] as ts.PropertyAssignment;
 
   // If it's not an array, nothing we can do really.
-  if (assignment.initializer.kind !== ts.SyntaxKind.ArrayLiteralExpression) {
+  if (
+    assignment.initializer.kind !== tsModule.SyntaxKind.ArrayLiteralExpression
+  ) {
     return source;
   }
 
@@ -244,7 +258,7 @@ function _addSymbolToDecoratorMetadata(
 
   let toInsert: string;
   let position = node.getEnd();
-  if (!isArray && node.kind == ts.SyntaxKind.ObjectLiteralExpression) {
+  if (!isArray && node.kind == tsModule.SyntaxKind.ObjectLiteralExpression) {
     // We haven't found the field in the metadata declaration. Insert a new
     // field.
     const expr = node as ts.ObjectLiteralExpression;
@@ -264,7 +278,10 @@ function _addSymbolToDecoratorMetadata(
         toInsert = `, ${metadataField}: [${expression}]`;
       }
     }
-  } else if (!isArray && node.kind == ts.SyntaxKind.ArrayLiteralExpression) {
+  } else if (
+    !isArray &&
+    node.kind == tsModule.SyntaxKind.ArrayLiteralExpression
+  ) {
     // We found the field but it's empty. Insert it just before the `]`.
     position--;
     toInsert = `${expression}`;
@@ -398,17 +415,22 @@ export function addImportToTestBed(
   specPath: string,
   symbolName: string
 ): ts.SourceFile {
+  if (!tsModule) {
+    tsModule = require('typescript');
+  }
   const allCalls: ts.CallExpression[] = <any>(
-    findNodes(source, ts.SyntaxKind.CallExpression)
+    findNodes(source, tsModule.SyntaxKind.CallExpression)
   );
 
   const configureTestingModuleObjectLiterals = allCalls
-    .filter((c) => c.expression.kind === ts.SyntaxKind.PropertyAccessExpression)
+    .filter(
+      (c) => c.expression.kind === tsModule.SyntaxKind.PropertyAccessExpression
+    )
     .filter(
       (c: any) => c.expression.name.getText(source) === 'configureTestingModule'
     )
     .map((c) =>
-      c.arguments[0].kind === ts.SyntaxKind.ObjectLiteralExpression
+      c.arguments[0].kind === tsModule.SyntaxKind.ObjectLiteralExpression
         ? c.arguments[0]
         : null
     );
@@ -434,17 +456,22 @@ export function addDeclarationsToTestBed(
   specPath: string,
   symbolName: string[]
 ): ts.SourceFile {
+  if (!tsModule) {
+    tsModule = require('typescript');
+  }
   const allCalls: ts.CallExpression[] = <any>(
-    findNodes(source, ts.SyntaxKind.CallExpression)
+    findNodes(source, tsModule.SyntaxKind.CallExpression)
   );
 
   const configureTestingModuleObjectLiterals = allCalls
-    .filter((c) => c.expression.kind === ts.SyntaxKind.PropertyAccessExpression)
+    .filter(
+      (c) => c.expression.kind === tsModule.SyntaxKind.PropertyAccessExpression
+    )
     .filter(
       (c: any) => c.expression.name.getText(source) === 'configureTestingModule'
     )
     .map((c) =>
-      c.arguments[0].kind === ts.SyntaxKind.ObjectLiteralExpression
+      c.arguments[0].kind === tsModule.SyntaxKind.ObjectLiteralExpression
         ? c.arguments[0]
         : null
     );
@@ -472,16 +499,18 @@ export function replaceIntoToTestBed(
   previousSymbol: string
 ): ts.SourceFile {
   const allCalls: ts.CallExpression[] = <any>(
-    findNodes(source, ts.SyntaxKind.CallExpression)
+    findNodes(source, tsModule.SyntaxKind.CallExpression)
   );
 
   const configureTestingModuleObjectLiterals = allCalls
-    .filter((c) => c.expression.kind === ts.SyntaxKind.PropertyAccessExpression)
+    .filter(
+      (c) => c.expression.kind === tsModule.SyntaxKind.PropertyAccessExpression
+    )
     .filter(
       (c: any) => c.expression.name.getText(source) === 'configureTestingModule'
     )
     .map((c) =>
-      c.arguments[0].kind === ts.SyntaxKind.ObjectLiteralExpression
+      c.arguments[0].kind === tsModule.SyntaxKind.ObjectLiteralExpression
         ? c.arguments[0]
         : null
     );
@@ -560,6 +589,9 @@ export function addRouteToNgModule(
 function getListOfRoutes(
   source: ts.SourceFile
 ): ts.NodeArray<ts.Expression> | null {
+  if (!tsModule) {
+    tsModule = require('typescript');
+  }
   const imports: any = getMatchingProperty(
     source,
     'imports',
@@ -567,11 +599,13 @@ function getListOfRoutes(
     '@angular/core'
   );
 
-  if (imports?.initializer.kind === ts.SyntaxKind.ArrayLiteralExpression) {
+  if (
+    imports?.initializer.kind === tsModule.SyntaxKind.ArrayLiteralExpression
+  ) {
     const a = imports.initializer as ts.ArrayLiteralExpression;
 
     for (const e of a.elements) {
-      if (e.kind === ts.SyntaxKind.CallExpression) {
+      if (e.kind === tsModule.SyntaxKind.CallExpression) {
         const ee = e as ts.CallExpression;
         const text = ee.expression.getText(source);
         if (
@@ -580,13 +614,13 @@ function getListOfRoutes(
           ee.arguments.length > 0
         ) {
           const routes = ee.arguments[0];
-          if (routes.kind === ts.SyntaxKind.ArrayLiteralExpression) {
+          if (routes.kind === tsModule.SyntaxKind.ArrayLiteralExpression) {
             return (routes as ts.ArrayLiteralExpression).elements;
-          } else if (routes.kind === ts.SyntaxKind.Identifier) {
+          } else if (routes.kind === tsModule.SyntaxKind.Identifier) {
             // find the array expression
             const variableDeclarations = findNodes(
               source,
-              ts.SyntaxKind.VariableDeclaration
+              tsModule.SyntaxKind.VariableDeclaration
             ) as ts.VariableDeclaration[];
 
             const routesDeclaration = variableDeclarations.find((x) => {
@@ -711,6 +745,9 @@ export function readBootstrapInfo(
   bootstrapComponentClassName: string;
   bootstrapComponentFileName: string;
 } {
+  if (!tsModule) {
+    tsModule = require('typescript');
+  }
   const config = readProjectConfiguration(host, app);
 
   let mainPath;
@@ -725,10 +762,10 @@ export function readBootstrapInfo(
   }
 
   const mainSource = host.read(mainPath)!.toString('utf-8');
-  const main = ts.createSourceFile(
+  const main = tsModule.createSourceFile(
     mainPath,
     mainSource,
-    ts.ScriptTarget.Latest,
+    tsModule.ScriptTarget.Latest,
     true
   );
   const moduleImports = getImport(
@@ -752,10 +789,10 @@ export function readBootstrapInfo(
   }
 
   const moduleSourceText = host.read(modulePath)!.toString('utf-8');
-  const moduleSource = ts.createSourceFile(
+  const moduleSource = tsModule.createSourceFile(
     modulePath,
     moduleSourceText,
-    ts.ScriptTarget.Latest,
+    tsModule.ScriptTarget.Latest,
     true
   );
 
@@ -793,11 +830,14 @@ export function getDecoratorPropertyValueNode(
   property: string,
   module: string
 ) {
+  if (!tsModule) {
+    tsModule = require('typescript');
+  }
   const moduleSourceText = host.read(modulePath)!.toString('utf-8');
-  const moduleSource = ts.createSourceFile(
+  const moduleSource = tsModule.createSourceFile(
     modulePath,
     moduleSourceText,
-    ts.ScriptTarget.Latest,
+    tsModule.ScriptTarget.Latest,
     true
   );
   const templateNode = getMatchingProperty(
@@ -815,17 +855,20 @@ function getMatchingObjectLiteralElement(
   source: ts.SourceFile,
   property: string
 ) {
+  if (!tsModule) {
+    tsModule = require('typescript');
+  }
   return (
     (node as ts.ObjectLiteralExpression).properties
-      .filter((prop) => prop.kind == ts.SyntaxKind.PropertyAssignment)
+      .filter((prop) => prop.kind == tsModule.SyntaxKind.PropertyAssignment)
       // Filter out every fields that's not "metadataField". Also handles string literals
       // (but not expressions).
       .filter((prop: ts.PropertyAssignment) => {
         const name = prop.name;
         switch (name.kind) {
-          case ts.SyntaxKind.Identifier:
+          case tsModule.SyntaxKind.Identifier:
             return (name as ts.Identifier).getText(source) === property;
-          case ts.SyntaxKind.StringLiteral:
+          case tsModule.SyntaxKind.StringLiteral:
             return (name as ts.StringLiteral).text === property;
         }
         return false;
@@ -834,15 +877,18 @@ function getMatchingObjectLiteralElement(
 }
 
 export function getTsSourceFile(host: Tree, path: string): ts.SourceFile {
+  if (!tsModule) {
+    tsModule = require('typescript');
+  }
   const buffer = host.read(path);
   if (!buffer) {
     throw new Error(`Could not read TS file (${path}).`);
   }
   const content = buffer.toString();
-  const source = ts.createSourceFile(
+  const source = tsModule.createSourceFile(
     path,
     content,
-    ts.ScriptTarget.Latest,
+    tsModule.ScriptTarget.Latest,
     true
   );
 

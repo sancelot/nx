@@ -83,6 +83,12 @@
       "type": "boolean",
       "default": false,
       "x-priority": "internal"
+    },
+    "skipTsConfig": {
+      "type": "boolean",
+      "default": false,
+      "description": "Do not update `tsconfig.json` for development experience.",
+      "x-priority": "internal"
     }
   },
   "required": []

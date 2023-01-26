@@ -11,10 +11,10 @@ import * as ts from 'typescript';
 import { NormalizedSchema } from '../schema';
 import {
   addBrowserRouter,
-  addInitialRoutes,
   addRoute,
   findComponentImportPath,
 } from '../../../utils/ast-utils';
+import { addInitialRoutes } from '../../../utils/add-initial-routes';
 import { maybeJs } from './maybe-js';
 import {
   reactRouterDomVersion,

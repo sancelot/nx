@@ -5,7 +5,7 @@ import {
   Tree,
 } from '@nrwl/devkit';
 import { runTasksInSerial } from '@nrwl/workspace/src/utilities/run-tasks-in-serial';
-import { jestInitGenerator } from '@nrwl/jest';
+import { jestInitGenerator } from '@nrwl/jest/generators';
 import { cypressInitGenerator } from '@nrwl/cypress';
 import { reactDomVersion, reactInitGenerator, reactVersion } from '@nrwl/react';
 
@@ -17,6 +17,7 @@ import {
 } from '../../utils/versions';
 import { InitSchema } from './schema';
 import { addGitIgnoreEntry } from '../../utils/add-gitignore-entry';
+import { initGenerator as jsInitGenerator } from '@nrwl/js';
 
 function updateDependencies(host: Tree) {
   return addDependenciesToPackageJson(
@@ -35,10 +36,14 @@ function updateDependencies(host: Tree) {
 }
 
 export async function nextInitGenerator(host: Tree, schema: InitSchema) {
+  await jsInitGenerator(host, {
+    js: schema.js,
+    skipFormat: true,
+  });
   const tasks: GeneratorCallback[] = [];
 
   if (!schema.unitTestRunner || schema.unitTestRunner === 'jest') {
-    const jestTask = jestInitGenerator(host, schema);
+    const jestTask = await jestInitGenerator(host, schema);
     tasks.push(jestTask);
   }
   if (!schema.e2eTestRunner || schema.e2eTestRunner === 'cypress') {
@@ -49,8 +54,10 @@ export async function nextInitGenerator(host: Tree, schema: InitSchema) {
   const reactTask = await reactInitGenerator(host, schema);
   tasks.push(reactTask);
 
-  const installTask = updateDependencies(host);
-  tasks.push(installTask);
+  if (!schema.skipPackageJson) {
+    const installTask = updateDependencies(host);
+    tasks.push(installTask);
+  }
 
   addGitIgnoreEntry(host);
 

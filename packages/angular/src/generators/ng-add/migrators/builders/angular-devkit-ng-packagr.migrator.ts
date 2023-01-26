@@ -1,15 +1,15 @@
-import type {
+import {
   ProjectConfiguration,
   TargetConfiguration,
   Tree,
+  updateJson,
 } from '@nrwl/devkit';
 import {
   joinPathFragments,
   offsetFromRoot,
-  updateJson,
   updateProjectConfiguration,
 } from '@nrwl/devkit';
-import { getRootTsConfigPathInTree } from '@nrwl/workspace/src/utilities/typescript';
+import { getRootTsConfigPathInTree } from '@nrwl/js';
 import { basename } from 'path';
 import { addBuildableLibrariesPostCssDependencies } from '../../../utils/dependencies';
 import type { Logger, ProjectMigrationInfo } from '../../utilities';

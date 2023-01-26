@@ -3,7 +3,7 @@ import { joinPathFragments, updateJson } from '@nrwl/devkit';
 import {
   getRelativePathToRootTsConfig,
   getRootTsConfigPathInTree,
-} from '@nrwl/workspace/src/utilities/typescript';
+} from '@nrwl/js';
 import { NormalizedSchema } from './normalized-schema';
 import {
   createTsConfig,

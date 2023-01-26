@@ -14,15 +14,15 @@ import {
   updateJson,
 } from '@nrwl/devkit';
 import { runTasksInSerial } from '@nrwl/workspace/src/utilities/run-tasks-in-serial';
+import {
+  getRelativePathToRootTsConfig,
+  getRootTsConfigPathInTree,
+} from '@nrwl/js';
 import init from '../init/init';
 import { addLinting } from '../../utils/add-linting';
 import { addJest } from '../../utils/add-jest';
 import { NormalizedSchema, normalizeOptions } from './lib/normalize-options';
 import { Schema } from './schema';
-import {
-  getRelativePathToRootTsConfig,
-  getRootTsConfigPathInTree,
-} from '@nrwl/workspace/src/utilities/typescript';
 
 export async function reactNativeLibraryGenerator(
   host: Tree,
@@ -35,14 +35,14 @@ export async function reactNativeLibraryGenerator(
     );
   }
 
-  addProject(host, options);
-  createFiles(host, options);
-
   const initTask = await init(host, {
     ...options,
     skipFormat: true,
     e2eTestRunner: 'none',
   });
+
+  addProject(host, options);
+  createFiles(host, options);
 
   const lintTask = await addLinting(host, {
     ...options,
@@ -51,10 +51,6 @@ export async function reactNativeLibraryGenerator(
       joinPathFragments(options.projectRoot, 'tsconfig.lib.json'),
     ],
   });
-
-  if (!options.skipTsConfig) {
-    updateBaseTsConfig(host, options);
-  }
 
   const jestTask = await addJest(
     host,
@@ -67,6 +63,10 @@ export async function reactNativeLibraryGenerator(
 
   if (options.publishable || options.buildable) {
     updateLibPackageNpmScope(host, options);
+  }
+
+  if (!options.skipTsConfig) {
+    updateBaseTsConfig(host, options);
   }
 
   if (!options.skipFormat) {

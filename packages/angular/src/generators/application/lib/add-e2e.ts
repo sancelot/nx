@@ -1,16 +1,13 @@
-import type { Tree } from '@nrwl/devkit';
+import { ensurePackage, Tree } from '@nrwl/devkit';
 import { joinPathFragments } from '@nrwl/devkit';
-import type { NormalizedSchema } from './normalized-schema';
-
-import { cypressProjectGenerator } from '@nrwl/cypress';
+import { Linter, lintProjectGenerator } from '@nrwl/linter';
+import { nxVersion } from 'nx/src/utils/versions';
 
 import { E2eTestRunner } from '../../../utils/test-runners';
-
 import { addProtractor } from './add-protractor';
 import { removeScaffoldedE2e } from './remove-scaffolded-e2e';
 import { updateE2eProject } from './update-e2e-project';
-import { Linter, lintProjectGenerator } from '@nrwl/linter';
-
+import type { NormalizedSchema } from './normalized-schema';
 export async function addE2e(tree: Tree, options: NormalizedSchema) {
   if (options.e2eTestRunner === E2eTestRunner.Protractor) {
     await addProtractor(tree, options);
@@ -19,6 +16,10 @@ export async function addE2e(tree: Tree, options: NormalizedSchema) {
   }
 
   if (options.e2eTestRunner === 'cypress') {
+    await ensurePackage(tree, '@nrwl/cypress', nxVersion);
+    const { cypressProjectGenerator } = await import(
+      '@nrwl/cypress/src/generators/cypress-project/cypress-project'
+    );
     await cypressProjectGenerator(tree, {
       name: options.e2eProjectName,
       directory: options.directory,

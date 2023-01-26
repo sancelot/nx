@@ -20,11 +20,11 @@ import {
   updateNxJson,
   updateProjectConfiguration,
 } from '@nrwl/devkit';
-import { jestProjectGenerator } from '@nrwl/jest';
+import { jestProjectGenerator } from '@nrwl/jest/generators';
 import { swcCoreVersion } from '@nrwl/js/src/utils/versions';
 import { Linter, lintProjectGenerator } from '@nrwl/linter';
 import { runTasksInSerial } from '@nrwl/workspace/src/utilities/run-tasks-in-serial';
-import { getRelativePathToRootTsConfig } from '@nrwl/workspace/src/utilities/typescript';
+import { getRelativePathToRootTsConfig } from '@nrwl/js';
 
 import { nxVersion, swcLoaderVersion } from '../../utils/versions';
 import { webInitGenerator } from '../init/init';
